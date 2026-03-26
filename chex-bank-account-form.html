@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הגדרת חשבון בנק — cheX</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #F5F6FA;
+  --surface: #FFFFFF;
+  --border: #E2E5EF;
+  --border-focus: #5C5FE4;
+  --text-primary: #1A1D2E;
+  --text-secondary: #6B7099;
+  --text-hint: #9CA3C4;
+  --accent: #5C5FE4;
+  --accent-light: #EEEEFF;
+  --accent-hover: #4A4DC8;
+  --disabled-bg: #F1F3FA;
+  --disabled-text: #B0B6D3;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(26,29,46,0.08);
+  --shadow-focus: 0 0 0 3px rgba(92,95,228,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 40px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.page-wrapper { width: 100%; max-width: 680px; }
+.page-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.3px; }
+.cards-stack { display: flex; flex-direction: column; gap: 16px; }
+
+/* Card */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: #FAFBFF; }
+.card-header-title { font-size: 14px; font-weight: 600; }
+.card-body { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.card-footer { padding: 14px 20px; border-top: 1px solid var(--border); background: #FAFBFF; }
+
+/* Fields */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.label { font-size: 13px; font-weight: 500; text-align: right; display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
+.hint { font-size: 12px; color: var(--text-secondary); text-align: right; }
+.hint.muted { color: var(--text-hint); }
+
+input[type="text"], select {
+  width: 100%; height: 42px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-family: 'Heebo', sans-serif; font-size: 14px; color: var(--text-primary);
+  background: var(--surface); outline: none; text-align: right;
+  appearance: none; -webkit-appearance: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus, select:focus { border-color: var(--border-focus); box-shadow: var(--shadow-focus); }
+input:disabled, select:disabled { background: var(--disabled-bg); color: var(--disabled-text); cursor: not-allowed; }
+input::placeholder { color: var(--text-hint); }
+
+.select-wrap { position: relative; }
+.select-wrap::after { content:''; position:absolute; left:12px; top:50%; transform:translateY(-50%); border:4px solid transparent; border-top:5px solid var(--text-secondary); pointer-events:none; }
+.select-wrap.disabled::after { border-top-color: var(--disabled-text); }
+select { padding-left: 32px; cursor: pointer; }
+
+/* Account type */
+.acct-type-box { display: none; flex-direction: column; gap: 8px; padding: 14px 16px; background: var(--accent-light); border: 1px solid #D0D2F5; border-radius: var(--radius-sm); }
+.acct-type-box.show { display: flex; }
+.acct-type-label { font-size: 13px; font-weight: 500; text-align: right; display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
+.acct-type-options { display: flex; gap: 10px; flex-direction: row-reverse; }
+.type-opt { flex:1; display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; flex-direction:row-reverse; justify-content:flex-start; transition:border-color 0.15s; }
+.type-opt:hover { border-color: var(--border-focus); }
+.type-opt.sel { border-color: var(--accent); background: var(--accent-light); }
+.type-opt input { display: none; }
+.radio-dot { width:16px; height:16px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; position:relative; transition:border-color 0.15s; }
+.type-opt.sel .radio-dot { border-color: var(--accent); }
+.type-opt.sel .radio-dot::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.type-text { display:flex; flex-direction:column; gap:1px; text-align:right; }
+.type-code { font-size:14px; font-weight:600; }
+.type-desc { font-size:11px; color:var(--text-secondary); }
+.acct-type-hint { font-size:11.5px; color:var(--text-secondary); text-align:right; line-height:1.5; }
+
+/* Tooltip */
+.info-icon { position:relative; display:inline-flex; align-items:center; color:var(--text-hint); cursor:pointer; }
+.info-icon:hover .tip { opacity:1; pointer-events:auto; transform:translateY(0); }
+.tip { position:absolute; top:calc(100% + 8px); right:0; background:var(--text-primary); color:#fff; font-size:12px; line-height:1.5; padding:8px 12px; border-radius:var(--radius-sm); max-width:260px; white-space:normal; z-index:10; opacity:0; pointer-events:none; transform:translateY(-4px); transition:opacity 0.15s, transform 0.15s; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+
+/* Buttons */
+.btn-primary { background:var(--accent); color:#fff; border:none; border-radius:var(--radius-sm); padding:0 24px; height:40px; font-family:'Heebo',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:background 0.15s; }
+.btn-primary:hover { background:var(--accent-hover); }
+.btn-primary:disabled { background:var(--disabled-bg); color:var(--disabled-text); cursor:not-allowed; }
+.btn-secondary { background:var(--surface); color:var(--accent); border:1.5px solid var(--accent); border-radius:var(--radius-sm); padding:0 20px; height:38px; font-family:'Heebo',sans-serif; font-size:13.5px; font-weight:600; cursor:pointer; transition:background 0.15s; }
+.btn-secondary:hover { background:var(--accent-light); }
+.btn-ghost { background:none; color:var(--text-secondary); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:0 16px; height:36px; font-family:'Heebo',sans-serif; font-size:13px; cursor:pointer; }
+
+/* Status banners */
+.status { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:var(--radius-sm); flex-direction:row-reverse; }
+.status svg { flex-shrink:0; margin-top:1px; }
+.status-text { display:flex; flex-direction:column; gap:3px; text-align:right; flex:1; }
+.status-title { font-size:13px; font-weight:600; }
+.status-desc { font-size:12px; color:var(--text-secondary); line-height:1.5; }
+.status.green { background:#F0FDF4; border:1px solid #BBF7D0; }
+.status.yellow { background:#FFFBEB; border:1px solid #FDE68A; }
+.status.blue { background:#EFF6FF; border:1px solid #BFDBFE; }
+.status.gray { background:#F3F4F6; border:1px solid #D1D5DB; }
+
+/* Divider */
+.divider { height:1px; background:var(--border); }
+
+/* Section label */
+.section-label { font-size:13px; font-weight:600; text-align:right; }
+.section-desc { font-size:12px; color:var(--text-secondary); text-align:right; line-height:1.5; }
+
+/* PDF mock */
+.pdf-wrap { border:1px solid var(--border); border-radius:var(--radius-sm); background:#FAFBFF; }
+.pdf-inner { padding:18px 20px; display:flex; flex-direction:column; gap:8px; }
+.pdf-header { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; padding-bottom:12px; border-bottom:1px solid var(--border); flex-direction:row-reverse; justify-content:flex-start; }
+.pdf-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--border); }
+.pdf-lbl { font-size:12px; color:var(--text-secondary); }
+.pdf-val { font-size:13px; font-weight:600; }
+.pdf-sig { margin-top:6px; height:44px; border:1.5px dashed #C8CBE8; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:flex-end; padding:0 12px; }
+.pdf-sig span { font-size:12px; color:var(--text-hint); }
+
+/* Canvas */
+.canvas-wrap { position:relative; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:#FAFBFF; overflow:hidden; }
+.canvas-wrap canvas { display:block; width:100%; height:120px; cursor:crosshair; touch-action:none; }
+.canvas-placeholder { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:13px; color:var(--text-hint); pointer-events:none; white-space:nowrap; transition:opacity 0.2s; }
+.canvas-wrap.signed .canvas-placeholder { opacity:0; }
+.canvas-clear { position:absolute; top:8px; left:10px; background:none; border:none; font-size:11.5px; color:var(--text-hint); cursor:pointer; padding:2px 6px; border-radius:4px; font-family:'Heebo',sans-serif; }
+.canvas-clear:hover { color:#EF4444; background:#FFF0F0; }
+
+/* Radio inline */
+.radio-row { display:flex; gap:20px; flex-direction:row-reverse; justify-content:flex-start; }
+.radio-lbl { display:flex; align-items:center; gap:7px; cursor:pointer; font-size:14px; flex-direction:row-reverse; }
+.radio-lbl input { display:none; }
+.radio-lbl .dot { width:16px; height:16px; border-radius:50%; border:2px solid var(--border); position:relative; flex-shrink:0; transition:border-color 0.15s; }
+.radio-lbl.checked .dot { border-color:var(--accent); }
+.radio-lbl.checked .dot::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:8px; height:8px; border-radius:50%; background:var(--accent); }
+
+/* Segmented */
+.seg { display:flex; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; flex-direction:row-reverse; }
+.seg-btn { flex:1; height:38px; background:var(--surface); border:none; border-left:1px solid var(--border); font-family:'Heebo',sans-serif; font-size:13px; color:var(--text-secondary); cursor:pointer; transition:background 0.15s, color 0.15s; }
+.seg-btn:last-child { border-left:none; }
+.seg-btn:hover { background:var(--accent-light); color:var(--accent); }
+.seg-btn.sel { background:var(--accent); color:#fff; font-weight:600; }
+
+/* Sim */
+.sim-row { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+.sim-btn { font-size:11px; color:var(--text-hint); background:none; border:1px dashed var(--border); border-radius:4px; padding:3px 10px; cursor:pointer; font-family:'Heebo',sans-serif; }
+
+/* Anim */
+@keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+.anim { animation: fadeIn 0.2s ease; }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+  <h1 class="page-title">הגדרת חשבון בנק להפקדה</h1>
+  <div class="cards-stack">
+
+  <!-- CARD 1: פרטי חשבון -->
+  <div class="card">
+    <div class="card-header"><span class="card-header-title">פרטי חשבון בנק</span></div>
+    <div class="card-body">
+
+      <div class="field">
+        <label class="label" for="bank">בנק</label>
+        <div class="select-wrap" id="bank-wrap">
+          <select id="bank">
+            <option value="" disabled selected>בחירת בנק</option>
+            <option value="leumi">בנק לאומי</option>
+            <option value="hapoalim">בנק הפועלים</option>
+            <option value="mizrahi">מזרחי טפחות</option>
+            <option value="discount">דיסקונט</option>
+            <option value="beinleumi">הבינלאומי</option>
+            <option value="other">אחר</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="acct-num">מספר חשבון</label>
+          <input type="text" id="acct-num" placeholder="הזנת מספר חשבון">
+        </div>
+        <div class="field">
+          <label class="label" for="branch">סניף</label>
+          <div class="select-wrap disabled" id="branch-wrap">
+            <select id="branch" disabled>
+              <option value="" disabled selected>בחירת סניף</option>
+            </select>
+          </div>
+          <span class="hint muted" id="branch-hint">יש לבחור בנק תחילה</span>
+        </div>
+      </div>
+
+      <!-- סוג חשבון — לאומי ובינלאומי בלבד -->
+      <div class="acct-type-box" id="acct-type-box">
+        <div class="acct-type-label">
+          סוג חשבון
+          <span class="info-icon">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#9CA3C4" stroke-width="1.4"/><path d="M8 7v5M8 5v.5" stroke="#9CA3C4" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span class="tip">מספר סוג החשבון מופיע בדף פירוט החשבון באתר הבנק, באפליקציה, או בראש פנקס ההמחאות</span>
+          </span>
+        </div>
+        <div class="acct-type-options" id="acct-type-opts"></div>
+        <span class="acct-type-hint" id="acct-type-hint"></span>
+      </div>
+
+    </div>
+    <div class="card-footer">
+      <button class="btn-primary" id="save-btn-1">שמירת פרטי חשבון</button>
+    </div>
+  </div>
+
+  <!-- CARD 2: הרשאת הפקדה -->
+  <div class="card">
+    <div class="card-header"><span class="card-header-title">הרשאת הפקדה</span></div>
+    <div class="card-body" id="card2-body">
+      <div class="section-desc" style="color:var(--text-hint)">יש לבחור בנק בחלק הראשון.</div>
+    </div>
+    <div class="card-footer">
+      <button class="btn-primary" id="save-btn-2" disabled>שמירת הרשאת הפקדה</button>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  // ── נתונים ──────────────────────────────────────────────
+  const DIRECT_BANKS = ['leumi', 'hapoalim'];
+  const BANK_NAMES = { leumi:'לאומי', hapoalim:'הפועלים', mizrahi:'מזרחי טפחות', discount:'דיסקונט', beinleumi:'הבינלאומי', other:'אחר' };
+
+  const BRANCHES = {
+    leumi:    [['800','800 — תל אביב מרכז'],['801','801 — ירושלים'],['802','802 — חיפה']],
+    hapoalim: [['501','501 — תל אביב'],['502','502 — רמת גן']],
+    mizrahi:  [['401','401 — מרכז'],['402','402 — צפון']],
+    discount: [['301','301 — תל אביב']],
+    beinleumi:[['101','101 — ראשי'],['102','102 — תל אביב']],
+    other:    [['001','001 — סניף ראשי']]
+  };
+
+  const ACCT_TYPES = {
+    leumi:    { opts:[['110','עובר ושב'],['330','עסקי']], hint:'מופיע בדף פירוט החשבון באתר לאומי' },
+    beinleumi:{ opts:[['105','עובר ושב'],['409','עסקי']], hint:'מופיע בדף פירוט החשבון באתר הבינלאומי' }
+  };
+
+  // ── Card 1 ───────────────────────────────────────────────
+  const bankSel    = document.getElementById('bank');
+  const branchSel  = document.getElementById('branch');
+  const branchWrap = document.getElementById('branch-wrap');
+  const branchHint = document.getElementById('branch-hint');
+  const acctBox    = document.getElementById('acct-type-box');
+  const acctOpts   = document.getElementById('acct-type-opts');
+  const acctHint   = document.getElementById('acct-type-hint');
+
+  bankSel.addEventListener('change', function() {
+    const v = this.value;
+
+    // סניפים
+    branchSel.disabled = false;
+    branchWrap.classList.remove('disabled');
+    branchHint.textContent = '';
+    branchHint.classList.remove('muted');
+    branchSel.innerHTML = '<option value="" disabled selected>בחירת סניף</option>';
+    (BRANCHES[v] || []).forEach(([val, lbl]) => {
+      const o = document.createElement('option');
+      o.value = val; o.textContent = lbl;
+      branchSel.appendChild(o);
+    });
+
+    // סוג חשבון
+    if (ACCT_TYPES[v]) {
+      acctBox.classList.add('show');
+      acctHint.textContent = ACCT_TYPES[v].hint;
+      acctOpts.innerHTML = '';
+      ACCT_TYPES[v].opts.forEach(([code, desc], i) => {
+        const lbl = document.createElement('label');
+        lbl.className = 'type-opt' + (i === 0 ? ' sel' : '');
+        lbl.innerHTML = `<input type="radio" name="acct-type" value="${code}" ${i===0?'checked':''}><div class="type-text"><span class="type-code">${code}</span><span class="type-desc">${desc}</span></div><div class="radio-dot"></div>`;
+        lbl.addEventListener('click', () => {
+          acctOpts.querySelectorAll('.type-opt').forEach(x => x.classList.remove('sel'));
+          lbl.classList.add('sel');
+        });
+        acctOpts.appendChild(lbl);
+      });
+    } else {
+      acctBox.classList.remove('show');
+    }
+
+    // Card 2
+    buildCard2(v);
+  });
+
+  // ── Card 2 ───────────────────────────────────────────────
+  function buildCard2(bank) {
+    const body = document.getElementById('card2-body');
+    const save2 = document.getElementById('save-btn-2');
+    save2.disabled = true;
+
+    if (DIRECT_BANKS.includes(bank)) {
+      body.innerHTML = buildDirectHTML();
+      initDirect(bank);
+    } else {
+      body.innerHTML = buildHelpHTML();
+      initHelp();
+    }
+  }
+
+  // ── Direct flow (לאומי / פועלים) ────────────────────────
+  function buildDirectHTML() {
+    return `
+      <div class="section-desc">להפקדת צ'קים ישירות לחשבון, יש לחתום על טופס הרשאה לבנק. ממלאים את הפרטים ומאשרים.</div>
+
+      <div id="step-form" class="anim">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="field">
+            <label class="label" for="owners">בעלי החשבון</label>
+            <input type="text" id="owners" placeholder="שמות בעלי החשבון, מופרדים בפסיקים">
+            <span class="hint">כפי שמופיע בכרטיס החשבון בבנק</span>
+          </div>
+          <div class="field">
+            <label class="label" for="signer">שם החותם</label>
+            <input type="text" id="signer" placeholder="שם מלא">
+          </div>
+          <div style="display:flex;justify-content:flex-start">
+            <button class="btn-secondary" id="btn-preview">צפייה בטופס לפני חתימה</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="step-preview" style="display:none" class="anim">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="divider"></div>
+          <div class="section-label">בדיקת הטופס לפני חתימה</div>
+          <div class="section-desc">יש לעיין בטופס ולוודא שהפרטים נכונים.</div>
+          <div class="pdf-wrap">
+            <div class="pdf-inner">
+              <div class="pdf-header">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="1" width="14" height="18" rx="2" fill="#E2E5EF"/><rect x="3" y="1" width="14" height="18" rx="2" stroke="#9CA3C4" stroke-width="1"/><path d="M7 7h6M7 10h6M7 13h4" stroke="#9CA3C4" stroke-width="1.2" stroke-linecap="round"/></svg>
+                <span>טופס הרשאה להפקדה — בנק <span id="pdf-bank"></span></span>
+              </div>
+              <div class="pdf-row"><span class="pdf-lbl">בעלי החשבון</span><span class="pdf-val" id="pdf-owners"></span></div>
+              <div class="pdf-row"><span class="pdf-lbl">בנק</span><span class="pdf-val" id="pdf-bank2"></span></div>
+              <div class="pdf-row"><span class="pdf-lbl">סניף</span><span class="pdf-val" id="pdf-branch"></span></div>
+              <div class="pdf-row"><span class="pdf-lbl">מספר חשבון</span><span class="pdf-val" id="pdf-acct"></span></div>
+              <div class="pdf-row"><span class="pdf-lbl">שם החותם</span><span class="pdf-val" id="pdf-signer"></span></div>
+              <div class="pdf-sig"><span>חתימה</span></div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">חתימה</label>
+            <div class="canvas-wrap" id="canvas-wrap">
+              <canvas id="sig-canvas" height="120"></canvas>
+              <span class="canvas-placeholder">חתימה כאן באמצעות העכבר או המגע</span>
+              <button class="canvas-clear" id="canvas-clear" type="button">מחיקה</button>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-start">
+            <button class="btn-ghost" id="btn-back">חזרה לעריכה</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="step-done-leumi" style="display:none" class="anim">
+        <div class="status green">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#22C55E"/><path d="M5 9l3 3 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="status-text"><span class="status-title">ההרשאה נחתמה</span><span class="status-desc">החשבון מוכן להפקדה.</span></div>
+        </div>
+      </div>
+
+      <div id="step-done-hapoalim" style="display:none" class="anim">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="status yellow">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#F59E0B"/><path d="M9 5v5M9 12v.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <div class="status-text"><span class="status-title">ממתין לאישור הבנק</span><span class="status-desc">הטופס נחתם ונשלח אליך במייל. יש להעבירו לסניף הבנק. לאחר אישור הבנק ניתן להתחיל להפקיד.</span></div>
+          </div>
+          <div style="display:flex;justify-content:flex-start;gap:8px">
+            <button class="btn-secondary" id="btn-download">הורדת הטופס</button>
+            <button class="sim-btn" id="btn-sim-hapoalim">★ סימולציה: הפקדה ראשונה הצליחה</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="step-done-hapoalim-ok" style="display:none" class="anim">
+        <div class="status green">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#22C55E"/><path d="M5 9l3 3 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="status-text"><span class="status-title">ההרשאה אושרה</span><span class="status-desc">החשבון פעיל.</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function initDirect(bank) {
+    // Preview
+    document.getElementById('btn-preview').addEventListener('click', function() {
+      const owners = document.getElementById('owners').value.trim();
+      const signer = document.getElementById('signer').value.trim();
+      if (!owners || !signer) { this.style.borderColor='#EF4444'; setTimeout(()=>this.style.borderColor='',2000); return; }
+
+      const branchEl = document.getElementById('branch');
+      const branchTxt = branchEl.selectedIndex > 0 ? branchEl.options[branchEl.selectedIndex].text : '—';
+      document.getElementById('pdf-bank').textContent   = BANK_NAMES[bank] || '—';
+      document.getElementById('pdf-bank2').textContent  = BANK_NAMES[bank] || '—';
+      document.getElementById('pdf-owners').textContent = owners;
+      document.getElementById('pdf-branch').textContent = branchTxt;
+      document.getElementById('pdf-acct').textContent   = document.getElementById('acct-num').value || '—';
+      document.getElementById('pdf-signer').textContent = signer;
+
+      document.getElementById('step-form').style.display = 'none';
+      document.getElementById('step-preview').style.display = 'block';
+    });
+
+    // Back
+    document.getElementById('btn-back').addEventListener('click', function() {
+      document.getElementById('step-preview').style.display = 'none';
+      document.getElementById('step-form').style.display = 'block';
+    });
+
+    // Canvas
+    initCanvas(bank);
+  }
+
+  function initCanvas(bank) {
+    const wrap   = document.getElementById('canvas-wrap');
+    const canvas = document.getElementById('sig-canvas');
+    const ctx    = canvas.getContext('2d');
+    const clear  = document.getElementById('canvas-clear');
+    let drawing  = false, hasSig = false;
+
+    function resize() {
+      const r = canvas.getBoundingClientRect();
+      const d = window.devicePixelRatio || 1;
+      canvas.width = r.width * d; canvas.height = 120 * d;
+      ctx.scale(d, d);
+      ctx.strokeStyle = '#1A1D2E'; ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    }
+
+    function pos(e) {
+      const r = canvas.getBoundingClientRect();
+      const s = e.touches ? e.touches[0] : e;
+      return { x: s.clientX - r.left, y: s.clientY - r.top };
+    }
+
+    function onDone() {
+      if (!hasSig) return;
+      document.getElementById('step-preview').style.display = 'none';
+      const save2 = document.getElementById('save-btn-2');
+
+      if (bank === 'leumi') {
+        document.getElementById('step-done-leumi').style.display = 'block';
+        save2.disabled = false;
+      } else {
+        document.getElementById('step-done-hapoalim').style.display = 'block';
+        save2.disabled = false;
+        document.getElementById('btn-sim-hapoalim').addEventListener('click', function() {
+          document.getElementById('step-done-hapoalim').style.display = 'none';
+          document.getElementById('step-done-hapoalim-ok').style.display = 'block';
+        });
+        document.getElementById('btn-download').addEventListener('click', function() {
+          this.textContent = 'הטופס הורד'; this.disabled = true;
+          setTimeout(() => { this.textContent = 'הורדת הטופס'; this.disabled = false; }, 3000);
+        });
+      }
+    }
+
+    canvas.addEventListener('mousedown', e => { drawing=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); });
+    canvas.addEventListener('mousemove', e => { if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); if(!hasSig){hasSig=true;wrap.classList.add('signed');} });
+    canvas.addEventListener('mouseup', () => { drawing=false; onDone(); });
+    canvas.addEventListener('mouseleave', () => { drawing=false; });
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }, {passive:false});
+    canvas.addEventListener('touchmove', e => { e.preventDefault(); if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); if(!hasSig){hasSig=true;wrap.classList.add('signed');} }, {passive:false});
+    canvas.addEventListener('touchend', () => { drawing=false; onDone(); });
+    clear.addEventListener('click', () => { ctx.clearRect(0,0,canvas.width,canvas.height); hasSig=false; wrap.classList.remove('signed'); });
+
+    setTimeout(resize, 80);
+    window.addEventListener('resize', resize);
+  }
+
+  // ── Help flow (בנקים אחרים) ──────────────────────────────
+  function buildHelpHTML() {
+    return `
+      <div id="help-form" class="anim">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="section-desc">נזדקק לכמה פרטים כדי לפתוח הרשאה מול הבנק.</div>
+          <div class="field">
+            <label class="label">האם קיימת כיום מערכת הפקדה מבית הלקוח?</label>
+            <div class="radio-row">
+              <label class="radio-lbl" id="r-yes"><input type="radio" name="existing" value="yes"><div class="dot"></div><span>כן</span></label>
+              <label class="radio-lbl" id="r-no"><input type="radio" name="existing" value="no"><div class="dot"></div><span>לא</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">כמות צ'קים משוערת לחודש</label>
+            <div class="seg">
+              <button class="seg-btn" data-v="1-20" type="button">1–20</button>
+              <button class="seg-btn" data-v="21-100" type="button">21–100</button>
+              <button class="seg-btn" data-v="100-200" type="button">100–200</button>
+              <button class="seg-btn" data-v="200+" type="button">200+</button>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-start">
+            <button class="btn-primary" id="btn-help-submit">שליחת הבקשה</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="help-pending" style="display:none" class="anim">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="status blue">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#3B82F6"/><path d="M9 5v5M9 12v.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <div class="status-text"><span class="status-title">הבקשה בטיפול</span><span class="status-desc">נציג cheX יצור איתך קשר טלפוני לתיאום ההמשך.</span></div>
+          </div>
+          <div class="sim-row">
+            <button class="sim-btn" id="btn-sim-approve">★ סימולציה: אושר</button>
+            <button class="sim-btn" id="btn-sim-reject">★ סימולציה: נדחה</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="help-approved" style="display:none" class="anim">
+        <div class="status green">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#22C55E"/><path d="M5 9l3 3 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="status-text"><span class="status-title">ההרשאה אושרה</span><span class="status-desc">החשבון מוכן להפקדה.</span></div>
+        </div>
+      </div>
+
+      <div id="help-rejected" style="display:none" class="anim">
+        <div class="status gray">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#9CA3AF"/><path d="M6 6l6 6M12 6l-6 6" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="status-text"><span class="status-title">הבקשה לא אושרה</span><span class="status-desc">לפרטים נוספים ניתן לפנות לתמיכה.</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function initHelp() {
+    // Radio
+    document.querySelectorAll('input[name="existing"]').forEach(r => {
+      r.addEventListener('change', function() {
+        document.querySelectorAll('.radio-lbl').forEach(l => l.classList.remove('checked'));
+        this.closest('.radio-lbl').classList.add('checked');
+      });
+    });
+
+    // Seg
+    document.querySelectorAll('.seg-btn').forEach(b => {
+      b.addEventListener('click', function() {
+        document.querySelectorAll('.seg-btn').forEach(x => x.classList.remove('sel'));
+        this.classList.add('sel');
+      });
+    });
+
+    // Submit
+    document.getElementById('btn-help-submit').addEventListener('click', function() {
+      const hasR = document.querySelector('input[name="existing"]:checked');
+      const hasS = document.querySelector('.seg-btn.sel');
+      if (!hasR || !hasS) { this.style.outline='2px solid #EF4444'; setTimeout(()=>this.style.outline='',2000); return; }
+      document.getElementById('help-form').style.display = 'none';
+      document.getElementById('help-pending').style.display = 'block';
+    });
+
+    // Sim
+    document.getElementById('btn-sim-approve').addEventListener('click', function() {
+      document.getElementById('help-pending').style.display = 'none';
+      document.getElementById('help-approved').style.display = 'block';
+      document.getElementById('save-btn-2').disabled = false;
+    });
+    document.getElementById('btn-sim-reject').addEventListener('click', function() {
+      document.getElementById('help-pending').style.display = 'none';
+      document.getElementById('help-rejected').style.display = 'block';
+    });
+  }
+
+});
+</script>
+</body>
+</html>
